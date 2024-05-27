@@ -1,0 +1,10 @@
+promptflow
+promptflow-tools
+gradio_client
+typing
+qdrant_client
+python-dotenv
+langchain
+openai
+tiktoken
+tqdm

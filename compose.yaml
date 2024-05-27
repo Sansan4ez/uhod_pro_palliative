@@ -1,0 +1,49 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+version: 'v2.24.6'
+services:
+  pf_backend:
+    build:
+      context: ./backend
+    image: pf_backend:v1.0.0
+    ports:
+      - 8080:8080
+    env_file:
+      - path: ./.env
+        required: true # default
+    networks:
+      - qdrant_net
+    depends_on:
+      - qdrant_vb
+      - sparse_vector
+      - reranker
+    restart: always
+  qdrant_vb:
+    image: qdrant/qdrant:v1.8.4
+    restart: always
+    ports:
+      - 6333:6333
+      - 6334:6334
+    networks:
+      - qdrant_net
+  sparse_vector:
+    build:
+      context: ./sparse_vector
+    image: sparse_vector:v1
+    ports:
+      - 7890:7860
+    networks:
+      - qdrant_net
+  reranker:
+    build:
+      context: ./reranker
+    image: reranker:v2
+    ports:
+      - 7810:7860
+    networks:
+      - qdrant_net
+networks:
+  qdrant_net:
+    name: qdrant_net
+    driver: bridge

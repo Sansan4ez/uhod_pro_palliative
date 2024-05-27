@@ -1,0 +1,13 @@
+system:
+{{prompt_text}}
+
+{% for item in history %}
+user:
+{{item.inputs.question}}
+
+assistant:
+{{item.outputs.answer}}
+{% endfor %}
+
+user:
+{{question}}

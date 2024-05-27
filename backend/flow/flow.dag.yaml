@@ -1,0 +1,94 @@
+id: palliative_chat_flow
+name: Palliative chat flow
+environment:
+  python_requirements_txt: requirements.txt
+inputs:
+  chat_history:
+    type: list
+    is_chat_input: false
+    is_chat_history: true
+    default: []
+  question:
+    type: string
+    default: В чем заключается уход за паллиативным больным?
+    is_chat_input: true
+    is_chat_history: false
+outputs:
+  id:
+    type: string
+    reference: ${id_gen.output}
+  answer:
+    type: string
+    reference: ${llm.output}
+    is_chat_output: true
+  context:
+    type: string
+    reference: ${re_ranker.output}
+    is_chat_output: false
+nodes:
+- name: question_embedding
+  type: python
+  source:
+    type: package
+    tool: promptflow.tools.embedding.embedding
+  inputs:
+    connection: OpenAI_VScode
+    input: ${inputs.question}
+    model: text-embedding-3-small
+  aggregation: false
+- name: sparse_vector
+  type: python
+  source:
+    type: code
+    path: sparse_vector.py
+  inputs:
+    question: ${inputs.question}
+- name: retrieve_knowledge
+  type: python
+  source:
+    type: code
+    path: retrieve_knowledge.py
+  inputs:
+    embedding: ${question_embedding.output}
+    sparse_vectors: ${sparse_vector.output}
+    limit_dense: 3
+    limit_sparse: 3
+- name: re_ranker
+  type: python
+  source:
+    type: code
+    path: re_ranker.py
+  inputs:
+    query: ${inputs.question}
+    docs: ${retrieve_knowledge.output}
+    limit_chunks: 3
+- name: patient_prompt
+  type: prompt
+  source:
+    type: code
+    path: patient_prompt.jinja2
+  inputs:
+    documentation: ${re_ranker.output}
+- name: llm
+  type: llm
+  source:
+    type: code
+    path: llm.jinja2
+  inputs:
+    deployment_name: gpt-4-32k
+    prompt_text: ${patient_prompt.output}
+    question: ${inputs.question}
+    history: ${inputs.chat_history}
+    model: gpt-3.5-turbo-0125
+    temperature: 0.2
+    response_format:
+      type: text
+  connection: OpenAI_VScode
+  api: chat
+- name: id_gen
+  type: python
+  source:
+    type: code
+    path: id_gen.py
+  inputs:
+    input1: somethng
